@@ -1,8 +1,5 @@
-mod tags;
+pub use self::tag::{TypeId, Tag, Class};
+pub use self::error::{Error};
 
-#[cfg(test)]
-mod test {
-    #[test]
-    fn it_works() {
-    }
-}
+mod tag;
+mod error;

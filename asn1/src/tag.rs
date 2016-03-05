@@ -22,7 +22,7 @@ pub enum Tag {
 }
 
 #[derive(Debug, PartialEq)]
-struct TypeId {
+pub struct TypeId {
     class: Class,
     is_constructed: bool,
     tag: Tag
