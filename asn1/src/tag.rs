@@ -28,6 +28,14 @@ pub struct TypeId {
     tag: Tag
 }
 
+const CLASS_MASK : u8 = 0b11000000;
+const CONSTRUCTED_MASK: u8 = 0b00100000;
+const TAG_MASK: u8 = 0b00011111;
+
+const UNIVERAL_VALUE : u8 = 0;
+const APPLICATION_VALUE : u8 = 0b01000000;
+const CONTEXT_SPECIFIC_VALUE: u8 = 0b10000000;
+
 impl TypeId {
 
     pub fn from(id: u8) -> TypeId {
@@ -39,20 +47,20 @@ impl TypeId {
     }
 
     fn get_class(id: u8) -> Class {
-        match id & 0b11000000 {
-            0 => Class::Univeral,
-            0b01000000 => Class::Application,
-            0b10000000 => Class::ContextSpecific,
+        match id & CLASS_MASK {
+            UNIVERAL_VALUE => Class::Univeral,
+            APPLICATION_VALUE => Class::Application,
+            CONTEXT_SPECIFIC_VALUE => Class::ContextSpecific,
             _ => Class::Private
         }
     }
 
     fn is_constructed(id: u8) -> bool {
-        (id & 0b00100000) != 0
+        (id & CONSTRUCTED_MASK) != 0
     }
 
     fn get_tag(id: u8) -> Tag {
-        match id & 0b00011111 {
+        match id & TAG_MASK {
             0 => Tag::EndOfContent,
             1 => Tag::Boolean,
             2 => Tag::Integer,

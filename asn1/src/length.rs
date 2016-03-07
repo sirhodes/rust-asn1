@@ -14,6 +14,9 @@ pub enum Length {
     Extended(usize),
 }
 
+const TOP_BIT_MASK : u8 = 0b10000000;
+const BOTTOM_BITS_MASK : u8 = !TOP_BIT_MASK;
+
 // (number of bytes consumed, result) or error
 pub type ParseResult =  Result<(usize, Length), LengthError>;
 
@@ -22,8 +25,8 @@ pub fn read_len(data: &[u8]) -> ParseResult {
             return Err(LengthError::InsufficentBytes);
     }
 
-    let top_bit = data[0] & 0b10000000;
-    let count = data[0] & 0b01111111;
+    let top_bit = data[0] & TOP_BIT_MASK;
+    let count = data[0] & BOTTOM_BITS_MASK;
 
     if top_bit == 0 { // single byte length
         Ok((1,Length::Single(count)))
