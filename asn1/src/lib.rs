@@ -1,7 +1,5 @@
 pub use self::tag::{TypeId, Tag, Class};
-pub use self::error::{Error};
-pub use self::length::{read_len};
+pub use self::length::{read_len, Length, LengthError};
 
 mod tag;
-mod error;
 mod length;

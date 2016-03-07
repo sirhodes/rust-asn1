@@ -1,6 +1,11 @@
-use Error;
 
-pub type ParseResult<T> =  Result<(usize, T), Error>;
+
+// various errors that can occurs during decoding
+#[derive(Debug, PartialEq)]
+pub enum LengthError {
+    InsufficentBytes,
+    UnsupportedLength(u8) // number of bytes
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Length {
@@ -9,9 +14,12 @@ pub enum Length {
     Extended(usize),
 }
 
-pub fn read_len(data: &[u8]) -> ParseResult<Length> {
+// (number of bytes consumed, result) or error
+pub type ParseResult =  Result<(usize, Length), LengthError>;
+
+pub fn read_len(data: &[u8]) -> ParseResult {
     if data.is_empty() {
-            return Err(Error::InsufficentBytesForLength);
+            return Err(LengthError::InsufficentBytes);
     }
 
     let top_bit = data[0] & 0b10000000;
@@ -26,22 +34,22 @@ pub fn read_len(data: &[u8]) -> ParseResult<Length> {
             1 => read_one_byte_len(1, &data[1..]),
             2 => read_two_byte_len(1, &data[1..]),
             // TODO: support 3 and 4 byte lengths?
-            x => Err(Error::UnsupportedLength(x)),
+            x => Err(LengthError::UnsupportedLength(x)),
         }
     }
 }
 
-fn read_one_byte_len(acc: usize, data: &[u8]) -> ParseResult<Length> {
+fn read_one_byte_len(acc: usize, data: &[u8]) -> ParseResult {
     if data.is_empty() {
-        Err(Error::InsufficentBytesForLength)
+        Err(LengthError::InsufficentBytes)
     } else {
         Ok((acc+1, Length::Extended(data[0] as usize)))
     }
 }
 
-fn read_two_byte_len(acc: usize, data: &[u8]) -> ParseResult<Length> {
+fn read_two_byte_len(acc: usize, data: &[u8]) -> ParseResult {
     if data.len() < 2 {
-        Err(Error::InsufficentBytesForLength)
+        Err(LengthError::InsufficentBytes)
     } else {
         let value = ((data[0] as usize) << 8) | (data[1] as usize);
         Ok((acc+2, Length::Extended(value)))
@@ -54,7 +62,7 @@ fn returns_error_on_empty_slice() {
     let bytes : [u8; 0] = [];
     let result = read_len(&bytes[..]);
 
-    assert_eq!(Err(Error::InsufficentBytesForLength), result);
+    assert_eq!(Err(LengthError::InsufficentBytes), result);
 }
 
 #[test]
