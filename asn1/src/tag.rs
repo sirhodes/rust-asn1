@@ -38,7 +38,7 @@ const CONTEXT_SPECIFIC_VALUE: u8 = 0b10000000;
 
 impl TypeId {
 
-    pub fn from(id: u8) -> TypeId {
+    pub fn from_byte(id: u8) -> TypeId {
         TypeId {
             class: TypeId::get_class(id),
             is_constructed: TypeId::is_constructed(id),
@@ -83,5 +83,5 @@ fn correctly_parses_typeid() {
         tag: Tag::Integer,
     };
 
-    assert_eq!(expected, TypeId::from(2));
+    assert_eq!(expected, TypeId::from_byte(2));
 }
