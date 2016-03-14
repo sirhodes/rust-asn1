@@ -31,22 +31,24 @@ pub fn encode(bytes: &[u8]) -> String {
                 value.push(get_second_char(bytes[pos], 0));
                 value.push('=');
                 value.push('=');
+                remainder -= 1;
             },
             2 => {
                 value.push(get_first_char(bytes[pos]));
                 value.push(get_second_char(bytes[pos], bytes[pos+1]));
                 value.push(get_third_char(bytes[pos+1], 0));
                 value.push('=');
+                remainder -= 2;
             }
             _ => {  // 3 or more
                 value.push(get_first_char(bytes[pos]));
                 value.push(get_second_char(bytes[pos], bytes[pos+1]));
                 value.push(get_third_char(bytes[pos+1], bytes[pos+2]));
                 value.push(get_fourth_char(bytes[pos+2]));
+                remainder -= 3;
             },
         }
         pos += 3;
-        remainder -= 3;
     }
     value
 }
@@ -70,8 +72,25 @@ fn get_fourth_char(third: u8) -> char {
 }
 
 #[test]
+fn correctly_encodes_empty_array() {
+    let bytes = b"";
+    assert_eq!(encode(&bytes[0..0]), "");
+}
+
+#[test]
 fn correctly_encodes_even_multiple_of_three() {
-    let bytes = b"Man";
-    let result = encode(&bytes[..]);
-    assert_eq!(result, "TWFu");
+    let bytes = b"ManMan";
+    assert_eq!(encode(&bytes[..]), "TWFuTWFu");
+}
+
+#[test]
+fn correctly_encodes_modulo_one() {
+    let bytes = b"ManM";
+    assert_eq!(encode(&bytes[..]), "TWFuTQ==");
+}
+
+#[test]
+fn correctly_encodes_modulo_two() {
+    let bytes = b"ManMa";
+    assert_eq!(encode(&bytes[..]), "TWFuTWE=");
 }
