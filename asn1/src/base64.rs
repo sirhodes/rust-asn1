@@ -74,7 +74,7 @@ fn get_fourth_char(third: u8) -> char {
 #[test]
 fn correctly_encodes_empty_array() {
     let bytes = b"";
-    assert_eq!(encode(&bytes[0..0]), "");
+    assert_eq!(encode(&bytes[..]), "");
 }
 
 #[test]
