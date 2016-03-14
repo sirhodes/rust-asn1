@@ -17,39 +17,52 @@ const BOTTOM2_BITS_MASK: u8 = !TOP6_BITS_MASK;
 const BOTTOM4_BITS_MASK : u8 = !TOP4_BITS_MASK;
 const BOTTOM6_BITS_MASK : u8 = !TOP2_BITS_MASK;
 
+pub trait PutChar {
+    fn put(self: &mut Self, c : char);
+}
 
-pub fn encode(bytes: &[u8]) -> String {
+impl PutChar for String {
+    fn put(self: &mut Self, c : char) {
+        self.push(c);
+    }
+}
 
-    let mut value = String::with_capacity((bytes.len()*4)/3);
+pub fn encode<T : PutChar>(bytes: &[u8], out: &mut T) -> () {
+
     let mut pos : usize = 0;
     let mut remainder = bytes.len();
 
     while remainder > 0 {
         match remainder {
             1 => {
-                value.push(get_first_char(bytes[pos]));
-                value.push(get_second_char(bytes[pos], 0));
-                value.push('=');
-                value.push('=');
+                out.put(get_first_char(bytes[pos]));
+                out.put(get_second_char(bytes[pos], 0));
+                out.put('=');
+                out.put('=');
                 remainder -= 1;
             },
             2 => {
-                value.push(get_first_char(bytes[pos]));
-                value.push(get_second_char(bytes[pos], bytes[pos+1]));
-                value.push(get_third_char(bytes[pos+1], 0));
-                value.push('=');
+                out.put(get_first_char(bytes[pos]));
+                out.put(get_second_char(bytes[pos], bytes[pos+1]));
+                out.put(get_third_char(bytes[pos+1], 0));
+                out.put('=');
                 remainder -= 2;
             }
             _ => {  // 3 or more
-                value.push(get_first_char(bytes[pos]));
-                value.push(get_second_char(bytes[pos], bytes[pos+1]));
-                value.push(get_third_char(bytes[pos+1], bytes[pos+2]));
-                value.push(get_fourth_char(bytes[pos+2]));
+                out.put(get_first_char(bytes[pos]));
+                out.put(get_second_char(bytes[pos], bytes[pos+1]));
+                out.put(get_third_char(bytes[pos+1], bytes[pos+2]));
+                out.put(get_fourth_char(bytes[pos+2]));
                 remainder -= 3;
             },
         }
         pos += 3;
     }
+}
+
+pub fn encode_as_string(bytes: &[u8]) -> String {
+    let mut value = String::with_capacity((bytes.len()*4)/3);
+    encode::<String>(bytes, &mut value);
     value
 }
 
@@ -74,23 +87,23 @@ fn get_fourth_char(third: u8) -> char {
 #[test]
 fn correctly_encodes_empty_array() {
     let bytes = b"";
-    assert_eq!(encode(&bytes[..]), "");
+    assert_eq!(encode_as_string(&bytes[..]), "");
 }
 
 #[test]
 fn correctly_encodes_even_multiple_of_three() {
     let bytes = b"ManMan";
-    assert_eq!(encode(&bytes[..]), "TWFuTWFu");
+    assert_eq!(encode_as_string(&bytes[..]), "TWFuTWFu");
 }
 
 #[test]
 fn correctly_encodes_modulo_one() {
     let bytes = b"ManM";
-    assert_eq!(encode(&bytes[..]), "TWFuTQ==");
+    assert_eq!(encode_as_string(&bytes[..]), "TWFuTQ==");
 }
 
 #[test]
 fn correctly_encodes_modulo_two() {
     let bytes = b"ManMa";
-    assert_eq!(encode(&bytes[..]), "TWFuTWE=");
+    assert_eq!(encode_as_string(&bytes[..]), "TWFuTWE=");
 }
