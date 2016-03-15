@@ -17,42 +17,43 @@ const BOTTOM2_BITS_MASK: u8 = !TOP6_BITS_MASK;
 const BOTTOM4_BITS_MASK : u8 = !TOP4_BITS_MASK;
 const BOTTOM6_BITS_MASK : u8 = !TOP2_BITS_MASK;
 
-pub trait PutChar {
-    fn put(self: &mut Self, c : char);
+pub trait CharWriter {
+    fn write(self: &mut Self, c : char);
 }
 
-pub fn encode<T : PutChar>(bytes: &[u8], out: &mut T) -> () {
+pub fn encode<T : CharWriter>(bytes: &[u8], writer: &mut T) -> () {
 
     let mut pos : usize = 0;
 
     while pos < bytes.len() {
         let remainder = bytes.len() - pos;
+        let cursor = &bytes[pos ..];
         match remainder {
             1 => {
-                out.put(get_first_char(bytes[pos]));
-                out.put(get_second_char(bytes[pos], 0));
-                out.put('=');
-                out.put('=');
+                writer.write(get_first_char(cursor[0]));
+                writer.write(get_second_char(cursor[0], 0));
+                writer.write('=');
+                writer.write('=');
             },
             2 => {
-                out.put(get_first_char(bytes[pos]));
-                out.put(get_second_char(bytes[pos], bytes[pos+1]));
-                out.put(get_third_char(bytes[pos+1], 0));
-                out.put('=');
+                writer.write(get_first_char(cursor[0]));
+                writer.write(get_second_char(cursor[0], cursor[1]));
+                writer.write(get_third_char(cursor[1], 0));
+                writer.write('=');
             }
             _ => {  // 3 or more
-                out.put(get_first_char(bytes[pos]));
-                out.put(get_second_char(bytes[pos], bytes[pos+1]));
-                out.put(get_third_char(bytes[pos+1], bytes[pos+2]));
-                out.put(get_fourth_char(bytes[pos+2]));
+                writer.write(get_first_char(cursor[0]));
+                writer.write(get_second_char(cursor[0], cursor[1]));
+                writer.write(get_third_char(cursor[1], cursor[2]));
+                writer.write(get_fourth_char(cursor[2]));
             },
         }
         pos += 3;
     }
 }
 
-impl PutChar for String {
-    fn put(self: &mut Self, c : char) {
+impl CharWriter for String {
+    fn write(self: &mut Self, c : char) {
         self.push(c);
     }
 }

@@ -1,5 +1,6 @@
+
 #[derive(Debug, PartialEq)]
-pub enum CharResult {
+enum CharResult {
     Line,
     Value(u8),
     Invalid
@@ -7,7 +8,7 @@ pub enum CharResult {
 
 //  this would likely be faster with a 256-byte table, but
 //  damn, the patteren matching is really slick
-pub fn get_value(c: char) -> CharResult {
+fn get_value(c: char) -> CharResult {
 
     match c {
         // ascii 65 -> 90, base64 0 -> 25
@@ -24,6 +25,8 @@ pub fn get_value(c: char) -> CharResult {
         _ => CharResult::Invalid,
     }
 }
+
+
 
 #[test]
 fn correct_gets_value_for_upper() {

@@ -4,6 +4,6 @@ pub use self::length::{read_len, Length, LengthError};
 mod tag;
 mod length;
 mod base64 {
-    mod encode;
-    mod decode;
+    pub mod encode;
+    pub mod decode;
 }
