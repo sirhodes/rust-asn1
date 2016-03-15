@@ -163,6 +163,18 @@ fn correctly_decodes_three_bytes() {
 }
 
 #[test]
-fn rejects_invalid_char() {
-    assert_eq!(None, get_value(':'));
+fn correctly_decodes_six_bytes() {
+    let mut vec : Vec<u8> = Vec::new();
+    let string : [char; 8] = ['T','W','F','u','T','Q','=','='];
+    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    assert_eq!(None, result);
+    assert_eq!(&vec[..], [77,97,110,77]);
+}
+
+#[test]
+fn rejects_trailing_bytes() {
+    let mut vec : Vec<u8> = Vec::new();
+    let string : [char; 8] = ['T','Q','=','=','T','W','F','u'];
+    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    assert_eq!(Some(DecodeErr::BadEndChar), result);
 }
