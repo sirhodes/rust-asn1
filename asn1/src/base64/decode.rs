@@ -19,7 +19,7 @@ fn get_value(c: char) -> Option<u8> {
     }
 }
 
-pub enum DecodeState {
+enum DecodeState {
     HaltBadValue,
     Continue,
     Done,
@@ -60,7 +60,7 @@ fn decode_three_bytes<T : ByteWriter>(c1: char, c2: char, c3: char, c4: char, wr
             writer.write(get_first_byte(b1, b2));
             writer.write(get_second_byte(b2, b3));
             writer.write(get_third_byte(b3, b4));
-            DecodeState::Done
+            DecodeState::Continue
         },
         _ => DecodeState::HaltBadValue,
     }
@@ -71,7 +71,8 @@ fn get_first_byte(b1: u8, b2: u8) -> u8 {
 }
 
 fn get_second_byte(b2: u8, b3: u8) -> u8 {
-    ((b2 & 0b00001111) << 4) | ((b3 & 0b00111100) << 2)
+    println!("Second byte! {} {}", b2, b3);
+    ((b2 & 0b00001111) << 4) | ((b3 & 0b00111100) >> 2)
 }
 
 fn get_third_byte(b3: u8, b4: u8) -> u8 {
@@ -126,17 +127,39 @@ impl ByteWriter for Vec<u8> {
     }
 }
 
-pub fn decode_to_vec(c: &[char], vec: &mut Vec<u8>) -> Option<DecodeErr> {
-    decode::<Vec<u8>>(c, vec)
+#[test]
+fn returns_error_on_bad_size() {
+    let mut vec : Vec<u8> = Vec::new();
+    let input : [char; 3] = ['T','Q','='];
+    let result = decode::<Vec<u8>>(&input[..], &mut vec);
+    assert_eq!(Some(DecodeErr::NotMultFour), result);
 }
 
 #[test]
-fn correctly_decodes_single_char() {
+fn correctly_decodes_one_byte() {
     let mut vec : Vec<u8> = Vec::new();
     let string : [char; 4] = ['T','Q','=','='];
     let result = decode::<Vec<u8>>(&string[..], &mut vec);
     assert_eq!(None, result);
-    assert_eq!(&vec[..], [0x77]);
+    assert_eq!(&vec[..], [77]);
+}
+
+#[test]
+fn correctly_decodes_two_bytes() {
+    let mut vec : Vec<u8> = Vec::new();
+    let string : [char; 4] = ['T','W','E','='];
+    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    assert_eq!(None, result);
+    assert_eq!(&vec[..], [77,97]);
+}
+
+#[test]
+fn correctly_decodes_three_bytes() {
+    let mut vec : Vec<u8> = Vec::new();
+    let string : [char; 4] = ['T','W','F','u'];
+    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    assert_eq!(None, result);
+    assert_eq!(&vec[..], [77,97,110]);
 }
 
 #[test]
