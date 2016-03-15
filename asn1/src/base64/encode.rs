@@ -21,42 +21,39 @@ pub trait PutChar {
     fn put(self: &mut Self, c : char);
 }
 
-impl PutChar for String {
-    fn put(self: &mut Self, c : char) {
-        self.push(c);
-    }
-}
-
 pub fn encode<T : PutChar>(bytes: &[u8], out: &mut T) -> () {
 
     let mut pos : usize = 0;
-    let mut remainder = bytes.len();
 
-    while remainder > 0 {
+    while pos < bytes.len() {
+        let remainder = bytes.len() - pos;
         match remainder {
             1 => {
                 out.put(get_first_char(bytes[pos]));
                 out.put(get_second_char(bytes[pos], 0));
                 out.put('=');
                 out.put('=');
-                remainder -= 1;
             },
             2 => {
                 out.put(get_first_char(bytes[pos]));
                 out.put(get_second_char(bytes[pos], bytes[pos+1]));
                 out.put(get_third_char(bytes[pos+1], 0));
                 out.put('=');
-                remainder -= 2;
             }
             _ => {  // 3 or more
                 out.put(get_first_char(bytes[pos]));
                 out.put(get_second_char(bytes[pos], bytes[pos+1]));
                 out.put(get_third_char(bytes[pos+1], bytes[pos+2]));
                 out.put(get_fourth_char(bytes[pos+2]));
-                remainder -= 3;
             },
         }
         pos += 3;
+    }
+}
+
+impl PutChar for String {
+    fn put(self: &mut Self, c : char) {
+        self.push(c);
     }
 }
 
