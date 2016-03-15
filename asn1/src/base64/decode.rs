@@ -20,11 +20,10 @@ pub fn get_value(c: char) -> CharResult {
         // ascii 48 - 57, base64 52 -> 61
         x if in_range(x, '0', '9') => CharResult::Value(c as u8 + 4),
 
-        '\r' => CharResult::Line,
-        '\n' => CharResult::Line,
         '+' => CharResult::Value(62),
         '/' => CharResult::Value(63),
-
+        
+        '\r' | '\n' => CharResult::Line,
         _ => CharResult::Invalid,
     }
 }
