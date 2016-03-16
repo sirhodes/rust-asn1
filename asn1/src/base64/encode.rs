@@ -82,26 +82,28 @@ fn get_fourth_char(third: u8) -> char {
     CODES[(third & BOTTOM6_BITS_MASK) as usize]
 }
 
-#[test]
-fn correctly_encodes_empty_array() {
-    let bytes = b"";
-    assert_eq!(encode_as_string(&bytes[..]), "");
-}
+#[cfg(test)]
+mod tests {
 
-#[test]
-fn correctly_encodes_even_multiple_of_three() {
-    let bytes = b"ManMan";
-    assert_eq!(encode_as_string(&bytes[..]), "TWFuTWFu");
-}
+    use super::*;
 
-#[test]
-fn correctly_encodes_modulo_one() {
-    let bytes = b"ManM";
-    assert_eq!(encode_as_string(&bytes[..]), "TWFuTQ==");
-}
+    #[test]
+    fn correctly_encodes_empty_array() {
+        assert_eq!(encode_as_string(b""), "");
+    }
 
-#[test]
-fn correctly_encodes_modulo_two() {
-    let bytes = b"ManMa";
-    assert_eq!(encode_as_string(&bytes[..]), "TWFuTWE=");
+    #[test]
+    fn correctly_encodes_even_multiple_of_three() {
+        assert_eq!(encode_as_string(b"ManMan"), "TWFuTWFu");
+    }
+
+    #[test]
+    fn correctly_encodes_modulo_one() {
+        assert_eq!(encode_as_string(b"ManM"), "TWFuTQ==");
+    }
+
+    #[test]
+    fn correctly_encodes_modulo_two() {
+        assert_eq!(encode_as_string(b"ManMa"), "TWFuTWE=");
+    }
 }

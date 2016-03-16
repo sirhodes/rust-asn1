@@ -149,37 +149,37 @@ mod tests {
 
     #[test]
     fn rejects_bad_size() {
-        test_failure(&b"TQ="[..], DecodeErr::NotMultFour);
+        test_failure(b"TQ=", DecodeErr::NotMultFour);
     }
 
     #[test]
     fn rejects_trailing_bytes() {
-        test_failure(&b"TQ==TWFu"[..], DecodeErr::BadEndChar);
+        test_failure(b"TQ==TWFu", DecodeErr::BadEndChar);
     }
 
     #[test]
     fn rejects_bad_characters() {
-        test_failure(&b"TQ!="[..], DecodeErr::BadValue);
+        test_failure(b"TQ!=", DecodeErr::BadValue);
     }
 
     #[test]
     fn correctly_decodes_one_byte() {
-        test_success(&b"TQ=="[..], &[77]);
+        test_success(b"TQ==", &[77]);
     }
 
     #[test]
     fn correctly_decodes_two_bytes() {
-        test_success(&b"TWE="[..], &[77,97]);
+        test_success(b"TWE=", &[77,97]);
     }
 
     #[test]
     fn correctly_decodes_three_bytes() {
-        test_success(&b"TWFu"[..], &[77,97,110]);
+        test_success(b"TWFu", &[77,97,110]);
     }
 
     #[test]
     fn correctly_decodes_six_bytes() {
-        test_success(&b"TWFuTQ=="[..], &[77,97,110,77]);
+        test_success(b"TWFuTQ==", &[77,97,110,77]);
     }
 
 
