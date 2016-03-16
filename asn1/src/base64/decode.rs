@@ -132,50 +132,55 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn returns_error_on_bad_size() {
+    fn test_success(input: &[u8], output: &[u8])
+    {
         let mut vec : Vec<u8> = Vec::new();
-        let result = decode(&b"TQ="[..], &mut vec);
-        assert_eq!(Some(DecodeErr::NotMultFour), result);
+        let result = decode(input, &mut vec);
+        assert_eq!(None, result);
+        assert_eq!(&vec[..], output);
+    }
+
+    fn test_failure(input: &[u8], err: DecodeErr)
+    {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(input, &mut vec);
+        assert_eq!(Some(err), result);
     }
 
     #[test]
-    fn correctly_decodes_one_byte() {
-        let mut vec : Vec<u8> = Vec::new();
-        let result = decode(&b"TQ=="[..], &mut vec);
-        assert_eq!(None, result);
-        assert_eq!(&vec[..], [77]);
-    }
-
-    #[test]
-    fn correctly_decodes_two_bytes() {
-        let mut vec : Vec<u8> = Vec::new();
-        let result = decode(&b"TWE="[..], &mut vec);
-        assert_eq!(None, result);
-        assert_eq!(&vec[..], [77,97]);
-    }
-
-    #[test]
-    fn correctly_decodes_three_bytes() {
-        let mut vec : Vec<u8> = Vec::new();
-        //let input = b"TWFu";
-        let result = decode(&b"TWFu"[..], &mut vec);
-        assert_eq!(None, result);
-        assert_eq!(&vec[..], [77,97,110]);
-    }
-
-    #[test]
-    fn correctly_decodes_six_bytes() {
-        let mut vec : Vec<u8> = Vec::new();
-        let result = decode(&b"TWFuTQ=="[..], &mut vec);
-        assert_eq!(None, result);
-        assert_eq!(&vec[..], [77,97,110,77]);
+    fn rejects_bad_size() {
+        test_failure(&b"TQ="[..], DecodeErr::NotMultFour);
     }
 
     #[test]
     fn rejects_trailing_bytes() {
-        let mut vec : Vec<u8> = Vec::new();
-        let result = decode(&b"TQ==TWFu"[..], &mut vec);
-        assert_eq!(Some(DecodeErr::BadEndChar), result);
+        test_failure(&b"TQ==TWFu"[..], DecodeErr::BadEndChar);
     }
+
+    #[test]
+    fn rejects_bad_characters() {
+        test_failure(&b"TQ!="[..], DecodeErr::BadValue);
+    }
+
+    #[test]
+    fn correctly_decodes_one_byte() {
+        test_success(&b"TQ=="[..], &[77]);
+    }
+
+    #[test]
+    fn correctly_decodes_two_bytes() {
+        test_success(&b"TWE="[..], &[77,97]);
+    }
+
+    #[test]
+    fn correctly_decodes_three_bytes() {
+        test_success(&b"TWFu"[..], &[77,97,110]);
+    }
+
+    #[test]
+    fn correctly_decodes_six_bytes() {
+        test_success(&b"TWFuTQ=="[..], &[77,97,110,77]);
+    }
+
+
 }
