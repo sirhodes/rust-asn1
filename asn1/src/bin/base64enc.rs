@@ -5,10 +5,10 @@ use std::io;
 use std::io::Read;
 
 fn main() {
-    let mut vec : Vec<u8> = Vec::new();
-    match io::stdin().read_to_end(&mut vec) {
-        Ok(_) => {            
-            println!("{}", base64::encode_as_string(&vec[..]));
+    let mut line = String::new();
+    match io::stdin().read_line(&mut line) {
+        Ok(_) => {
+            println!("{}", base64::encode_as_string(&line.as_bytes()[..]));
         }
         Err(error) => println!("error: {}", error),
     }
