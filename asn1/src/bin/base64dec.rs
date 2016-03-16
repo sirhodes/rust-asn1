@@ -2,20 +2,22 @@ extern crate asn1;
 
 use asn1::base64;
 use std::io;
+use std::str;
 
 fn main() {
     let mut line = String::new();
     let mut output : Vec<u8> = Vec::new();
 
-    match io::stdin().read_line(&mut line) {
-        Ok(_) => {            
-            match base64::decode(&line.trim()[..].as_bytes(), &mut output) {
-                None => {
-                    println!("{:?}", output);
-                }
-                Some(error) => println!("error: {:?}", error),
+    io::stdin().read_line(&mut line).unwrap();
+
+    match base64::decode(&line.trim_right()[..].as_bytes(), &mut output) {
+        None => {
+            println!("bytes: {:?}", output);
+            match str::from_utf8(&output[..]) {
+                Ok(str) => println!("{}", str),
+                Err(err) => println!("Not UTF8: {}", err),
             }
         }
-        Err(error) => println!("error: {}", error),
-    }
+        Some(error) => println!("error: {:?}", error),
+    }    
 }
