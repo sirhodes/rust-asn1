@@ -73,15 +73,20 @@ impl TypeId {
     }
 }
 
+#[cfg(test)]
+mod tests {
 
-#[test]
-fn correctly_parses_typeid() {
+    use super::*;
 
-    let expected = TypeId {
-        class: Class::Univeral,
-        is_constructed: false,
-        tag: Tag::Integer,
-    };
+    #[test]
+    fn correctly_parses_typeid() {
 
-    assert_eq!(expected, TypeId::from_byte(2));
+        let expected = TypeId {
+            class: Class::Univeral,
+            is_constructed: false,
+            tag: Tag::Integer,
+        };
+
+        assert_eq!(expected, TypeId::from_byte(2));
+    }
 }
