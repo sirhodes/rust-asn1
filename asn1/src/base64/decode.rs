@@ -90,16 +90,16 @@ pub enum DecodeErr {
 }
 
 // returns the number of bytes written or an error
-pub fn decode<T : ByteWriter>(c: &[u8], writer: &mut T) -> Option<DecodeErr> {
+pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Option<DecodeErr> {
 
-    if c.len() % 4 != 0 {
+    if bytes.len() % 4 != 0 {
         return Some(DecodeErr::NotMultFour);
     }
 
     let mut pos = 0;
 
-    while pos < c.len() {
-        let cursor = &c[pos ..];
+    while pos < bytes.len() {
+        let cursor = &bytes[pos ..];
         let set = (cursor[0], cursor[1], cursor[2], cursor[3]);
         match decode_four_char(&set, writer) {
             DecodeState::HaltBadValue => return Some(DecodeErr::BadValue),
@@ -113,7 +113,7 @@ pub fn decode<T : ByteWriter>(c: &[u8], writer: &mut T) -> Option<DecodeErr> {
         }
     }
 
-    if c.len() - pos == 0 {
+    if bytes.len() - pos == 0 {
         None
     } else {
         Some(DecodeErr::BadEndChar)
@@ -123,6 +123,14 @@ pub fn decode<T : ByteWriter>(c: &[u8], writer: &mut T) -> Option<DecodeErr> {
 impl ByteWriter for Vec<u8> {
     fn write(self: &mut Self, b: u8) {
         self.push(b);
+    }
+}
+
+pub fn decode_as_vec(bytes: &[u8]) -> Result<Vec<u8>, DecodeErr> {
+    let mut vec : Vec<u8> = Vec::new();
+    match decode(bytes, &mut vec) {
+        None => Ok(vec),
+        Some(err) => Err(err),
     }
 }
 

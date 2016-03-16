@@ -5,10 +5,6 @@ use std::io;
 
 fn main() {
     let mut line = String::new();
-    match io::stdin().read_line(&mut line) {
-        Ok(_) => {
-            println!("{}", base64::encode_as_string(&line.as_bytes()[..]));
-        }
-        Err(error) => println!("error: {}", error),
-    }
+    io::stdin().read_line(&mut line).unwrap();
+    println!("{}", base64::encode_as_string(&line.as_bytes()[..]));
 }
