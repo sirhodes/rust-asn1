@@ -9,14 +9,6 @@ const CODES : [char; 64] = [
     'w','x','y','z','0','1','2','3',
     '4','5','6','7','8','9','+','/'];
 
-const TOP2_BITS_MASK : u8 = 0b11000000;
-const TOP4_BITS_MASK : u8 = 0b11110000;
-const TOP6_BITS_MASK : u8 = 0b11111100;
-
-const BOTTOM2_BITS_MASK: u8 = !TOP6_BITS_MASK;
-const BOTTOM4_BITS_MASK : u8 = !TOP4_BITS_MASK;
-const BOTTOM6_BITS_MASK : u8 = !TOP2_BITS_MASK;
-
 pub trait CharWriter {
     fn write(self: &mut Self, c : char);
 }
@@ -65,21 +57,21 @@ pub fn encode_as_string(bytes: &[u8]) -> String {
 }
 
 fn get_first_char(first: u8) -> char {
-    CODES[((first & TOP6_BITS_MASK) >> 2) as usize]
+    CODES[((first & 0b11111100) >> 2) as usize]
 }
 
 fn get_second_char(first: u8, second: u8) -> char {
-    let index = ((first & BOTTOM2_BITS_MASK) << 4) | ((second & TOP4_BITS_MASK) >> 4);
+    let index = ((first & 0b00000011) << 4) | ((second & 0b11110000) >> 4);
     CODES[index as usize]
 }
 
 fn get_third_char(second: u8, third: u8) -> char {
-    let index = ((second & BOTTOM4_BITS_MASK) << 2) | ((third & TOP2_BITS_MASK) >> 6);
+    let index = ((second & 0b00001111) << 2) | ((third & 0b11000000) >> 6);
     CODES[index as usize]
 }
 
 fn get_fourth_char(third: u8) -> char {
-    CODES[(third & BOTTOM6_BITS_MASK) as usize]
+    CODES[(third & 0b00111111) as usize]
 }
 
 #[cfg(test)]
