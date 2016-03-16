@@ -70,7 +70,7 @@ fn get_first_byte(b1: u8, b2: u8) -> u8 {
     ((b1 & 0b00111111) << 2) | ((b2 & 0b00110000) >> 4)
 }
 
-fn get_second_byte(b2: u8, b3: u8) -> u8 {    
+fn get_second_byte(b2: u8, b3: u8) -> u8 {
     ((b2 & 0b00001111) << 4) | ((b3 & 0b00111100) >> 2)
 }
 
@@ -163,23 +163,37 @@ mod tests {
 
     #[test]
     fn correctly_decodes_one_byte() {
-        test_success(b"TQ==", &[77]);
+        test_success(b"TQ==", b"M");
     }
 
     #[test]
     fn correctly_decodes_two_bytes() {
-        test_success(b"TWE=", &[77,97]);
+        test_success(b"TWE=", b"Ma");
     }
 
     #[test]
     fn correctly_decodes_three_bytes() {
-        test_success(b"TWFu", &[77,97,110]);
+        test_success(b"TWFu", b"Man");
     }
 
     #[test]
     fn correctly_decodes_six_bytes() {
-        test_success(b"TWFuTQ==", &[77,97,110,77]);
+        test_success(b"TWFuTQ==", b"ManM");
     }
 
+    #[test]
+    fn correctly_decodes_long_input() {
+        let input =     b"TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGl\
+                        zIHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2Yg\
+                        dGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGlud\
+                        WVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRoZS\
+                        BzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4=";
 
+        let result =    b"Man is distinguished, not only by his reason, but by this singular passion from \
+                        other animals, which is a lust of the mind, that by a perseverance of delight in the \
+                        continued and indefatigable generation of knowledge, exceeds the short vehemence of \
+                        any carnal pleasure.";
+
+        test_success(input, result);
+    }
 }
