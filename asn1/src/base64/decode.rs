@@ -2,9 +2,9 @@
 
 //  this would likely be faster with a 256-byte table, but
 //  damn, the patteren matching is really slick
-fn get_value(c: char) -> Option<u8> {
+fn get_value(c: u8) -> Option<u8> {
 
-    match c {
+    match c as char {
         // ascii 65 -> 90, base64 0 -> 25
         'A' ... 'Z' => Some(c as u8 - 65),
         // ascii 97 - 122, base64 26 -> 51
@@ -25,15 +25,15 @@ enum DecodeState {
     Done,
 }
 
-fn decode_four_char<T : ByteWriter>(set: &(char, char, char, char), writer: &mut T) -> DecodeState {
+fn decode_four_char<T : ByteWriter>(set: &(u8, u8, u8, u8), writer: &mut T) -> DecodeState {
     match *set {
-        (a, b, '=', '=') => decode_single_byte(a, b, writer),
-        (a, b, c, '=') => decode_two_bytes(a, b, c, writer),
+        (a, b, b'=', b'=') => decode_single_byte(a, b, writer),
+        (a, b, c, b'=') => decode_two_bytes(a, b, c, writer),
         (a, b, c, d) => decode_three_bytes(a, b, c, d, writer),
     }
 }
 
-fn decode_single_byte<T : ByteWriter>(c1: char, c2: char, writer: &mut T) -> DecodeState {
+fn decode_single_byte<T : ByteWriter>(c1: u8, c2: u8, writer: &mut T) -> DecodeState {
     match (get_value(c1), get_value(c2)) {
         (Some(b1), Some(b2)) => {
             writer.write(get_first_byte(b1, b2));
@@ -43,7 +43,7 @@ fn decode_single_byte<T : ByteWriter>(c1: char, c2: char, writer: &mut T) -> Dec
     }
 }
 
-fn decode_two_bytes<T : ByteWriter>(c1: char, c2: char, c3: char, writer: &mut T) -> DecodeState {
+fn decode_two_bytes<T : ByteWriter>(c1: u8, c2: u8, c3: u8, writer: &mut T) -> DecodeState {
     match (get_value(c1), get_value(c2), get_value(c3)) {
         (Some(b1), Some(b2), Some(b3)) => {
             writer.write(get_first_byte(b1, b2));
@@ -54,7 +54,7 @@ fn decode_two_bytes<T : ByteWriter>(c1: char, c2: char, c3: char, writer: &mut T
     }
 }
 
-fn decode_three_bytes<T : ByteWriter>(c1: char, c2: char, c3: char, c4: char, writer: &mut T) -> DecodeState {
+fn decode_three_bytes<T : ByteWriter>(c1: u8, c2: u8, c3: u8, c4: u8, writer: &mut T) -> DecodeState {
     match (get_value(c1), get_value(c2), get_value(c3), get_value(c4)) {
         (Some(b1), Some(b2), Some(b3), Some(b4)) => {
             writer.write(get_first_byte(b1, b2));
@@ -91,7 +91,7 @@ pub enum DecodeErr {
 }
 
 // returns the number of bytes written or an error
-pub fn decode<T : ByteWriter>(c: &[char], writer: &mut T) -> Option<DecodeErr> {
+pub fn decode<T : ByteWriter>(c: &[u8], writer: &mut T) -> Option<DecodeErr> {
 
     if c.len() % 4 != 0 {
         return Some(DecodeErr::NotMultFour);
@@ -130,25 +130,22 @@ impl ByteWriter for Vec<u8> {
 #[test]
 fn returns_error_on_bad_size() {
     let mut vec : Vec<u8> = Vec::new();
-    let input : [char; 3] = ['T','Q','='];
-    let result = decode::<Vec<u8>>(&input[..], &mut vec);
+    let result = decode(&b"TQ="[..], &mut vec);
     assert_eq!(Some(DecodeErr::NotMultFour), result);
 }
 
 #[test]
 fn correctly_decodes_one_byte() {
     let mut vec : Vec<u8> = Vec::new();
-    let string : [char; 4] = ['T','Q','=','='];
-    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    let result = decode(&b"TQ=="[..], &mut vec);
     assert_eq!(None, result);
     assert_eq!(&vec[..], [77]);
 }
 
 #[test]
 fn correctly_decodes_two_bytes() {
-    let mut vec : Vec<u8> = Vec::new();
-    let string : [char; 4] = ['T','W','E','='];
-    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    let mut vec : Vec<u8> = Vec::new();    
+    let result = decode::<Vec<u8>>(&b"TWE="[..], &mut vec);
     assert_eq!(None, result);
     assert_eq!(&vec[..], [77,97]);
 }
@@ -156,8 +153,8 @@ fn correctly_decodes_two_bytes() {
 #[test]
 fn correctly_decodes_three_bytes() {
     let mut vec : Vec<u8> = Vec::new();
-    let string : [char; 4] = ['T','W','F','u'];
-    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    //let input = b"TWFu";
+    let result = decode::<Vec<u8>>(&b"TWFu"[..], &mut vec);
     assert_eq!(None, result);
     assert_eq!(&vec[..], [77,97,110]);
 }
@@ -165,8 +162,7 @@ fn correctly_decodes_three_bytes() {
 #[test]
 fn correctly_decodes_six_bytes() {
     let mut vec : Vec<u8> = Vec::new();
-    let string : [char; 8] = ['T','W','F','u','T','Q','=','='];
-    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    let result = decode::<Vec<u8>>(&b"TWFuTQ=="[..], &mut vec);
     assert_eq!(None, result);
     assert_eq!(&vec[..], [77,97,110,77]);
 }
@@ -174,7 +170,6 @@ fn correctly_decodes_six_bytes() {
 #[test]
 fn rejects_trailing_bytes() {
     let mut vec : Vec<u8> = Vec::new();
-    let string : [char; 8] = ['T','Q','=','=','T','W','F','u'];
-    let result = decode::<Vec<u8>>(&string[..], &mut vec);
+    let result = decode::<Vec<u8>>(&b"TQ==TWFu"[..], &mut vec);
     assert_eq!(Some(DecodeErr::BadEndChar), result);
 }

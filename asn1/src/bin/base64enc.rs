@@ -2,7 +2,6 @@ extern crate asn1;
 
 use asn1::base64;
 use std::io;
-use std::io::Read;
 
 fn main() {
     let mut line = String::new();
