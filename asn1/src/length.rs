@@ -59,47 +59,33 @@ fn read_two_byte_len(acc: usize, data: &[u8]) -> ParseResult {
     }
 }
 
-#[test]
-fn returns_error_on_empty_slice() {
+#[cfg(test)]
+mod tests {
 
-    let bytes : [u8; 0] = [];
-    let result = read_len(&bytes[..]);
+    use super::*;
 
-    assert_eq!(Err(LengthError::InsufficentBytes), result);
-}
+    #[test]
+    fn returns_error_on_empty_slice() {
+        assert_eq!(Err(LengthError::InsufficentBytes), read_len(b""));
+    }
 
-#[test]
-fn parses_no_length() {
+    #[test]
+    fn parses_no_length() {
+        assert_eq!(Ok((1, Length::None)), read_len(&[0x80]));
+    }
 
-    let bytes : [u8; 1] = [0x80];
-    let result = read_len(&bytes[..]);
+    #[test]
+    fn parses_one_byte_length() {
+        assert_eq!(Ok((1, Length::Single(7))), read_len(&[0x07]));
+    }
 
-    assert_eq!(Ok((1, Length::None)), result);
-}
+    #[test]
+    fn parses_one_byte_extended_length() {
+        assert_eq!(Ok((2, Length::Extended(254))), read_len(&[0x81, 254]));
+    }
 
-#[test]
-fn parses_one_byte_length() {
-
-    let bytes : [u8; 1] = [0x07];
-    let result = read_len(&bytes[..]);
-
-    assert_eq!(Ok((1, Length::Single(7))), result);
-}
-
-#[test]
-fn parses_one_byte_extended_length() {
-
-    let bytes : [u8; 2] = [0x81, 254];
-    let result = read_len(&bytes[..]);
-
-    assert_eq!(Ok((2, Length::Extended(254))), result);
-}
-
-#[test]
-fn parses_two_byte_extendend_length() {
-
-    let bytes : [u8; 3] = [0x82, 0x01, 0xFF];
-    let result = read_len(&bytes[..]);
-
-    assert_eq!(Ok((3, Length::Extended(256+255))), result);
+    #[test]
+    fn parses_two_byte_extendend_length() {
+        assert_eq!(Ok((3, Length::Extended(256+255))), read_len(&[0x82, 0x01, 0xFF]));
+    }
 }
