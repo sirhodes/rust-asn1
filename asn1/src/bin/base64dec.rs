@@ -8,8 +8,8 @@ fn main() {
     let mut output : Vec<u8> = Vec::new();
 
     match io::stdin().read_line(&mut line) {
-        Ok(_) => {
-            match base64::decode(&line[..].as_bytes(), &mut output) {
+        Ok(_) => {            
+            match base64::decode(&line.trim()[..].as_bytes(), &mut output) {
                 None => {
                     println!("{:?}", output);
                 }

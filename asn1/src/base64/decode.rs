@@ -70,8 +70,7 @@ fn get_first_byte(b1: u8, b2: u8) -> u8 {
     ((b1 & 0b00111111) << 2) | ((b2 & 0b00110000) >> 4)
 }
 
-fn get_second_byte(b2: u8, b3: u8) -> u8 {
-    println!("Second byte! {} {}", b2, b3);
+fn get_second_byte(b2: u8, b3: u8) -> u8 {    
     ((b2 & 0b00001111) << 4) | ((b3 & 0b00111100) >> 2)
 }
 
