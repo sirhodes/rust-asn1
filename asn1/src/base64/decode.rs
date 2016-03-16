@@ -127,49 +127,55 @@ impl ByteWriter for Vec<u8> {
     }
 }
 
-#[test]
-fn returns_error_on_bad_size() {
-    let mut vec : Vec<u8> = Vec::new();
-    let result = decode(&b"TQ="[..], &mut vec);
-    assert_eq!(Some(DecodeErr::NotMultFour), result);
-}
+#[cfg(test)]
+mod tests {
 
-#[test]
-fn correctly_decodes_one_byte() {
-    let mut vec : Vec<u8> = Vec::new();
-    let result = decode(&b"TQ=="[..], &mut vec);
-    assert_eq!(None, result);
-    assert_eq!(&vec[..], [77]);
-}
+    use super::*;
 
-#[test]
-fn correctly_decodes_two_bytes() {
-    let mut vec : Vec<u8> = Vec::new();    
-    let result = decode::<Vec<u8>>(&b"TWE="[..], &mut vec);
-    assert_eq!(None, result);
-    assert_eq!(&vec[..], [77,97]);
-}
+    #[test]
+    fn returns_error_on_bad_size() {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(&b"TQ="[..], &mut vec);
+        assert_eq!(Some(DecodeErr::NotMultFour), result);
+    }
 
-#[test]
-fn correctly_decodes_three_bytes() {
-    let mut vec : Vec<u8> = Vec::new();
-    //let input = b"TWFu";
-    let result = decode::<Vec<u8>>(&b"TWFu"[..], &mut vec);
-    assert_eq!(None, result);
-    assert_eq!(&vec[..], [77,97,110]);
-}
+    #[test]
+    fn correctly_decodes_one_byte() {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(&b"TQ=="[..], &mut vec);
+        assert_eq!(None, result);
+        assert_eq!(&vec[..], [77]);
+    }
 
-#[test]
-fn correctly_decodes_six_bytes() {
-    let mut vec : Vec<u8> = Vec::new();
-    let result = decode::<Vec<u8>>(&b"TWFuTQ=="[..], &mut vec);
-    assert_eq!(None, result);
-    assert_eq!(&vec[..], [77,97,110,77]);
-}
+    #[test]
+    fn correctly_decodes_two_bytes() {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(&b"TWE="[..], &mut vec);
+        assert_eq!(None, result);
+        assert_eq!(&vec[..], [77,97]);
+    }
 
-#[test]
-fn rejects_trailing_bytes() {
-    let mut vec : Vec<u8> = Vec::new();
-    let result = decode::<Vec<u8>>(&b"TQ==TWFu"[..], &mut vec);
-    assert_eq!(Some(DecodeErr::BadEndChar), result);
+    #[test]
+    fn correctly_decodes_three_bytes() {
+        let mut vec : Vec<u8> = Vec::new();
+        //let input = b"TWFu";
+        let result = decode(&b"TWFu"[..], &mut vec);
+        assert_eq!(None, result);
+        assert_eq!(&vec[..], [77,97,110]);
+    }
+
+    #[test]
+    fn correctly_decodes_six_bytes() {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(&b"TWFuTQ=="[..], &mut vec);
+        assert_eq!(None, result);
+        assert_eq!(&vec[..], [77,97,110,77]);
+    }
+
+    #[test]
+    fn rejects_trailing_bytes() {
+        let mut vec : Vec<u8> = Vec::new();
+        let result = decode(&b"TQ==TWFu"[..], &mut vec);
+        assert_eq!(Some(DecodeErr::BadEndChar), result);
+    }
 }
