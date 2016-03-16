@@ -10,7 +10,9 @@ fn main() {
     match io::stdin().read_line(&mut line) {
         Ok(_) => {
             match base64::decode(&line[..].as_bytes(), &mut output) {
-                None => println!("success!"),
+                None => {
+                    println!("{:?}", output);
+                }
                 Some(error) => println!("error: {:?}", error),
             }
         }
