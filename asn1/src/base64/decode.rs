@@ -58,53 +58,6 @@ impl<'a> Iterator for SkipWhitespace<'a> {
     }
 }
 
-enum DecodeState {
-    HaltBadValue,
-    Continue,
-    Done,
-}
-
-fn decode_four_char<T : ByteWriter>(set: &(u8, u8, u8, u8), writer: &mut T) -> DecodeState {
-    match *set {
-        (a, b, b'=', b'=') => decode_single_byte(a, b, writer),
-        (a, b, c, b'=') => decode_two_bytes(a, b, c, writer),
-        (a, b, c, d) => decode_three_bytes(a, b, c, d, writer),
-    }
-}
-
-fn decode_single_byte<T : ByteWriter>(c1: u8, c2: u8, writer: &mut T) -> DecodeState {
-    match (get_value(c1), get_value(c2)) {
-        (Some(b1), Some(b2)) => {
-            writer.write(get_first_byte(b1, b2));
-            DecodeState::Done
-        },
-        _ => DecodeState::HaltBadValue,
-    }
-}
-
-fn decode_two_bytes<T : ByteWriter>(c1: u8, c2: u8, c3: u8, writer: &mut T) -> DecodeState {
-    match (get_value(c1), get_value(c2), get_value(c3)) {
-        (Some(b1), Some(b2), Some(b3)) => {
-            writer.write(get_first_byte(b1, b2));
-            writer.write(get_second_byte(b2, b3));
-            DecodeState::Done
-        },
-        _ => DecodeState::HaltBadValue,
-    }
-}
-
-fn decode_three_bytes<T : ByteWriter>(c1: u8, c2: u8, c3: u8, c4: u8, writer: &mut T) -> DecodeState {
-    match (get_value(c1), get_value(c2), get_value(c3), get_value(c4)) {
-        (Some(b1), Some(b2), Some(b3), Some(b4)) => {
-            writer.write(get_first_byte(b1, b2));
-            writer.write(get_second_byte(b2, b3));
-            writer.write(get_third_byte(b3, b4));
-            DecodeState::Continue
-        },
-        _ => DecodeState::HaltBadValue,
-    }
-}
-
 fn get_first_byte(b1: u8, b2: u8) -> u8 {
     ((b1 & 0b00111111) << 2) | ((b2 & 0b00110000) >> 4)
 }
@@ -124,38 +77,89 @@ pub trait ByteWriter {
 #[derive(Debug, PartialEq)]
 pub enum DecodeErr {
     NotMultFour,
-    BadValue,
-    BadEndChar
+    BadValue(u8),
+    BadEndChar(u8)
 }
 
 // returns the number of bytes written or an error
 pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Option<DecodeErr> {
 
-    if bytes.len() % 4 != 0 {
-        return Some(DecodeErr::NotMultFour);
-    }
+    let mut iter = SkipWhitespace::new(bytes);
 
-    let mut pos = 0;
+    loop {
 
-    while pos < bytes.len() {
-        let cursor = &bytes[pos ..];
-        let set = (cursor[0], cursor[1], cursor[2], cursor[3]);
-        match decode_four_char(&set, writer) {
-            DecodeState::HaltBadValue => return Some(DecodeErr::BadValue),
-            DecodeState::Continue => {
-                pos += 4;
+        let c1 = match iter.next() {
+            Some(c) => c,
+            None => return None, // success! we reached the end of input on an multiple of 4
+        };
+
+        let c2 = match iter.next() {
+            Some(c) => c,
+            None => return Some(DecodeErr::NotMultFour),
+        };
+
+        let c3 = match iter.next() {
+            Some(c) => c,
+            None => return Some(DecodeErr::NotMultFour),
+        };
+
+        let c4 = match iter.next() {
+            Some(c) => c,
+            None => return Some(DecodeErr::NotMultFour),
+        };
+
+        match (c1, c2, c3, c4) {
+            (a, b, b'=', b'=') => {
+                let v1 = match get_value(a) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(a)),
+                };
+                let v2 = match get_value(b) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(b)),
+                };
+                writer.write(get_first_byte(v1, v2));
+                return iter.next().map(|b| DecodeErr::BadEndChar(b)); //  must be end of input
             },
-            DecodeState::Done => {
-                pos += 4;
-                break;
+            (a, b, c, b'=') => {
+                let v1 = match get_value(a) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(a)),
+                };
+                let v2 = match get_value(b) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(b)),
+                };
+                let v3 = match get_value(c) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(c)),
+                };
+                writer.write(get_first_byte(v1, v2));
+                writer.write(get_second_byte(v2, v3));
+                return iter.next().map(|b| DecodeErr::BadEndChar(b)); //  must be end of input
+            },
+            (a, b, c, d) => {
+                let v1 = match get_value(a) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(a)),
+                };
+                let v2 = match get_value(b) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(b)),
+                };
+                let v3 = match get_value(c) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(c)),
+                };
+                let v4 = match get_value(d) {
+                    Some(v) => v,
+                    None => return Some(DecodeErr::BadValue(d)),
+                };
+                writer.write(get_first_byte(v1, v2));
+                writer.write(get_second_byte(v2, v3));
+                writer.write(get_third_byte(v3, v4));
             },
         }
-    }
-
-    if bytes.len() - pos == 0 {
-        None
-    } else {
-        Some(DecodeErr::BadEndChar)
     }
 }
 
@@ -200,17 +204,22 @@ mod tests {
 
     #[test]
     fn rejects_trailing_bytes() {
-        test_failure(b"TQ==TWFu", DecodeErr::BadEndChar);
+        test_failure(b"TQ==TWFu", DecodeErr::BadEndChar(b'T'));
     }
 
     #[test]
     fn rejects_bad_characters() {
-        test_failure(b"TQ!=", DecodeErr::BadValue);
+        test_failure(b"TQ!=", DecodeErr::BadValue(b'!'));
     }
 
     #[test]
     fn correctly_decodes_one_byte() {
         test_success(b"TQ==", b"M");
+    }
+
+    #[test]
+    fn correctly_skips_whitespace() {
+        test_success(b"\r\nT Q =\t=\t\r\n", b"M");
     }
 
     #[test]
