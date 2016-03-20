@@ -11,22 +11,20 @@ pub enum LengthError {
 pub enum Length {
     None,
     Single(u8),
-    Extended(usize),
+    Extended(u32),
 }
-
-const TOP_BIT_MASK : u8 = 0b10000000;
-const BOTTOM_BITS_MASK : u8 = !TOP_BIT_MASK;
 
 // (number of bytes consumed, result) or error
 pub type ParseResult =  Result<(usize, Length), LengthError>;
 
 pub fn read_len(data: &[u8]) -> ParseResult {
+
     if data.is_empty() {
             return Err(LengthError::InsufficentBytes);
     }
 
-    let top_bit = data[0] & TOP_BIT_MASK;
-    let count = data[0] & BOTTOM_BITS_MASK;
+    let count   = data[0] & 0b01111111u8;
+    let top_bit = data[0] & 0b10000000u8;
 
     if top_bit == 0 { // single byte length
         Ok((1,Length::Single(count)))
@@ -46,7 +44,7 @@ fn read_one_byte_len(acc: usize, data: &[u8]) -> ParseResult {
     if data.is_empty() {
         Err(LengthError::InsufficentBytes)
     } else {
-        Ok((acc+1, Length::Extended(data[0] as usize)))
+        Ok((acc+1, Length::Extended(data[0] as u32)))
     }
 }
 
@@ -54,7 +52,7 @@ fn read_two_byte_len(acc: usize, data: &[u8]) -> ParseResult {
     if data.len() < 2 {
         Err(LengthError::InsufficentBytes)
     } else {
-        let value = ((data[0] as usize) << 8) | (data[1] as usize);
+        let value = ((data[0] as u32) << 8) | (data[1] as u32);
         Ok((acc+2, Length::Extended(value)))
     }
 }
