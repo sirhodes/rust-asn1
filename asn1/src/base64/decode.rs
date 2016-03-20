@@ -76,13 +76,16 @@ pub trait ByteWriter {
 
 #[derive(Debug, PartialEq)]
 pub enum DecodeErr {
+    // The non-whitespace input is not a multiple of four
     NotMultFour,
+    // The input contains non-whitespace characters after the terminating padding
     BadValue(u8),
+    // The input contains a non-base64 value
     BadEndChar(u8)
 }
 
 // returns the number of bytes written or an error
-pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Option<DecodeErr> {
+pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), DecodeErr> {
 
     let mut iter = SkipWhitespace::new(bytes);
 
@@ -90,70 +93,76 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Option<DecodeErr>
 
         let c1 = match iter.next() {
             Some(c) => c,
-            None => return None, // success! we reached the end of input on an multiple of 4
+            None => return Ok(()), // success! we reached the end of input on an multiple of 4
         };
 
         let c2 = match iter.next() {
             Some(c) => c,
-            None => return Some(DecodeErr::NotMultFour),
+            None => return Err(DecodeErr::NotMultFour),
         };
 
         let c3 = match iter.next() {
             Some(c) => c,
-            None => return Some(DecodeErr::NotMultFour),
+            None => return Err(DecodeErr::NotMultFour),
         };
 
         let c4 = match iter.next() {
             Some(c) => c,
-            None => return Some(DecodeErr::NotMultFour),
+            None => return Err(DecodeErr::NotMultFour),
         };
 
         match (c1, c2, c3, c4) {
             (a, b, b'=', b'=') => {
                 let v1 = match get_value(a) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(a)),
+                    None => return Err(DecodeErr::BadValue(a)),
                 };
                 let v2 = match get_value(b) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(b)),
+                    None => return Err(DecodeErr::BadValue(b)),
                 };
                 writer.write(get_first_byte(v1, v2));
-                return iter.next().map(|b| DecodeErr::BadEndChar(b)); //  must be end of input
+                return match iter.next() { //  must be end of input
+                    Some(x) => Err(DecodeErr::BadEndChar(x)),
+                    None => Ok(()),
+                };
             },
             (a, b, c, b'=') => {
                 let v1 = match get_value(a) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(a)),
+                    None => return Err(DecodeErr::BadValue(a)),
                 };
                 let v2 = match get_value(b) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(b)),
+                    None => return Err(DecodeErr::BadValue(b)),
                 };
                 let v3 = match get_value(c) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(c)),
+                    None => return Err(DecodeErr::BadValue(c)),
                 };
                 writer.write(get_first_byte(v1, v2));
                 writer.write(get_second_byte(v2, v3));
-                return iter.next().map(|b| DecodeErr::BadEndChar(b)); //  must be end of input
+                return match iter.next() { //  must be end of input
+                    Some(x) => Err(DecodeErr::BadEndChar(x)),
+                    None => Ok(()),
+                };
             },
             (a, b, c, d) => {
                 let v1 = match get_value(a) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(a)),
+                    None => return Err(DecodeErr::BadValue(a)),
                 };
                 let v2 = match get_value(b) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(b)),
+                    None => return Err(DecodeErr::BadValue(b)),
                 };
                 let v3 = match get_value(c) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(c)),
+                    None => return Err(DecodeErr::BadValue(c)),
                 };
                 let v4 = match get_value(d) {
                     Some(v) => v,
-                    None => return Some(DecodeErr::BadValue(d)),
+                    None => return Err(DecodeErr::BadValue(d)),
                 };
                 writer.write(get_first_byte(v1, v2));
                 writer.write(get_second_byte(v2, v3));
@@ -171,10 +180,7 @@ impl ByteWriter for Vec<u8> {
 
 pub fn decode_as_vec(bytes: &[u8]) -> Result<Vec<u8>, DecodeErr> {
     let mut vec : Vec<u8> = Vec::new();
-    match decode(bytes, &mut vec) {
-        None => Ok(vec),
-        Some(err) => Err(err),
-    }
+    decode(bytes, &mut vec).map(|_| vec)
 }
 
 #[cfg(test)]
@@ -186,7 +192,7 @@ mod tests {
     {
         let mut vec : Vec<u8> = Vec::new();
         let result = decode(input, &mut vec);
-        assert_eq!(None, result);
+        assert!(result.is_ok());
         assert_eq!(&vec[..], output);
     }
 
@@ -194,7 +200,7 @@ mod tests {
     {
         let mut vec : Vec<u8> = Vec::new();
         let result = decode(input, &mut vec);
-        assert_eq!(Some(err), result);
+        assert_eq!(Err(err), result);
     }
 
     #[test]
