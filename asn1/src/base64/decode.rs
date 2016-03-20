@@ -19,6 +19,45 @@ fn get_value(c: u8) -> Option<u8> {
     }
 }
 
+/// whitespace characters that are ignored during decoding
+fn is_whitespace(c: u8) -> bool {
+    match c as char {
+        '\n' => true,
+        '\r' => true,
+        '\t' => true,
+        ' ' => true,
+        _ => false,
+    }
+}
+
+struct SkipWhitespace<'a> {
+    bytes: &'a[u8],
+    pos: usize
+}
+
+impl<'a> SkipWhitespace<'a> {
+    fn new(bytes: &'a[u8]) -> SkipWhitespace<'a> {
+        SkipWhitespace {
+            bytes: bytes,
+            pos: 0,
+        }
+    }
+}
+
+impl<'a> Iterator for SkipWhitespace<'a> {
+    type Item = u8;
+    fn next(&mut self) -> Option<u8> {
+        while self.pos < self.bytes.len() {
+            let value = self.bytes[self.pos];
+            self.pos += 1;
+            if !is_whitespace(value) {
+                return Some(value)
+            }
+        }
+        None
+    }
+}
+
 enum DecodeState {
     HaltBadValue,
     Continue,
