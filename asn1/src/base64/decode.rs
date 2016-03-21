@@ -9,7 +9,7 @@ pub enum DecodeErr {
 }
 
 //  this would likely be faster with a 256-byte table, but
-//  damn, the patteren matching is really slick
+//  damn, the pattern matching is really slick
 fn get_value(c: u8) -> Result<u8, DecodeErr> {
 
     match c as char {
