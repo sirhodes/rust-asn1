@@ -1,11 +1,13 @@
 use length::{Length, LengthError, read_len};
 use tag::{Class, TypeId, Tag};
 
+#[derive(Debug, PartialEq)]
 pub enum Token<'a> {
     ObjectIdentifier(&'a[u8]),
     NoMoreTokens
 }
 
+#[derive(Debug, PartialEq)]
 pub enum DecodeError {
     Len(LengthError),
     UnknownType(TypeId),
@@ -28,7 +30,7 @@ impl<'a> Parser<'a> {
     pub fn new(input: &'a[u8]) -> Parser {
         Parser {
             bytes: input,
-            pos: 0,            
+            pos: 0,
         }
     }
 
@@ -73,5 +75,18 @@ impl<'a> Parser<'a> {
                 }
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn accepts_empty_input() {
+        let input = b"";
+        let mut parser = Parser::new(input);
+        assert_eq!(Ok(Token::NoMoreTokens), parser.next());
     }
 }
