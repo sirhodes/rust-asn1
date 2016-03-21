@@ -43,6 +43,13 @@ pub trait ByteWriter {
     fn write(self: &mut Self, b: u8);
 }
 
+pub fn to_result(opt: Option<&u8>) -> Result<u8, DecodeErr> {
+     match opt {
+         Some(&c) => Ok(c),
+         None => return Err(DecodeErr::NotMultFour),
+     }
+}
+
 // returns the number of bytes written or an error
 pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<usize, DecodeErr> {
 
@@ -59,25 +66,14 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<usize, Dec
 
     loop {
 
-        let c1 : u8 = match iter.next() {
+        let c1 = match iter.next() {
             Some(&c) => c,
             None => return Ok(count), // success! we reached the end of input on a multiple of 4
         };
 
-        let c2 : u8 = match iter.next() {
-            Some(&c) => c,
-            None => return Err(DecodeErr::NotMultFour),
-        };
-
-        let c3 : u8 = match iter.next() {
-            Some(&c) => c,
-            None => return Err(DecodeErr::NotMultFour),
-        };
-
-        let c4 : u8 = match iter.next() {
-            Some(&c) => c,
-            None => return Err(DecodeErr::NotMultFour),
-        };
+        let c2 = try!(to_result(iter.next()));
+        let c3 = try!(to_result(iter.next()));
+        let c4 = try!(to_result(iter.next()));
 
         match (c1, c2, c3, c4) {
             (a, b, b'=', b'=') => {
