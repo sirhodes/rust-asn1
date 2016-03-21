@@ -38,34 +38,6 @@ fn is_whitespace(c: u8) -> bool {
     }
 }
 
-struct SkipWhitespace<'a> {
-    bytes: &'a[u8],
-    pos: usize
-}
-
-impl<'a> SkipWhitespace<'a> {
-    fn new(bytes: &'a[u8]) -> SkipWhitespace<'a> {
-        SkipWhitespace {
-            bytes: bytes,
-            pos: 0,
-        }
-    }
-}
-
-impl<'a> Iterator for SkipWhitespace<'a> {
-    type Item = u8;
-    fn next(&mut self) -> Option<u8> {
-        while self.pos < self.bytes.len() {
-            let value = self.bytes[self.pos];
-            self.pos += 1;
-            if !is_whitespace(value) {
-                return Some(value)
-            }
-        }
-        None
-    }
-}
-
 fn get_first_byte(b1: u8, b2: u8) -> u8 {
     ((b1 & 0b00111111) << 2) | ((b2 & 0b00110000) >> 4)
 }
@@ -82,32 +54,30 @@ pub trait ByteWriter {
     fn write(self: &mut Self, b: u8);
 }
 
-
-
 // returns the number of bytes written or an error
 pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), DecodeErr> {
 
-    let mut iter = SkipWhitespace::new(bytes);
+    let mut iter = bytes.iter().filter(|&&c| !is_whitespace(c));
 
     loop {
 
-        let c1 = match iter.next() {
-            Some(c) => c,
+        let c1 : u8 = match iter.next() {
+            Some(&c) => c,
             None => return Ok(()), // success! we reached the end of input on an multiple of 4
         };
 
-        let c2 = match iter.next() {
-            Some(c) => c,
+        let c2 : u8 = match iter.next() {
+            Some(&c) => c,
             None => return Err(DecodeErr::NotMultFour),
         };
 
-        let c3 = match iter.next() {
-            Some(c) => c,
+        let c3 : u8 = match iter.next() {
+            Some(&c) => c,
             None => return Err(DecodeErr::NotMultFour),
         };
 
-        let c4 = match iter.next() {
-            Some(c) => c,
+        let c4 : u8 = match iter.next() {
+            Some(&c) => c,
             None => return Err(DecodeErr::NotMultFour),
         };
 
@@ -117,7 +87,7 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), Decode
                 let v2 = try!(get_value(b));
                 writer.write(get_first_byte(v1, v2));
                 return match iter.next() { //  must be end of input
-                    Some(x) => Err(DecodeErr::BadEndChar(x)),
+                    Some(&x) => Err(DecodeErr::BadEndChar(x)),
                     None => Ok(()),
                 };
             },
@@ -128,7 +98,7 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), Decode
                 writer.write(get_first_byte(v1, v2));
                 writer.write(get_second_byte(v2, v3));
                 return match iter.next() { //  must be end of input
-                    Some(x) => Err(DecodeErr::BadEndChar(x)),
+                    Some(&x) => Err(DecodeErr::BadEndChar(x)),
                     None => Ok(()),
                 };
             },
