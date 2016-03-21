@@ -1,21 +1,29 @@
-
+#[derive(Debug, PartialEq)]
+pub enum DecodeErr {
+    // The non-whitespace input is not a multiple of four
+    NotMultFour,
+    // The input contains non-whitespace characters after the terminating padding
+    BadValue(u8),
+    // The input contains a non-base64 value
+    BadEndChar(u8)
+}
 
 //  this would likely be faster with a 256-byte table, but
 //  damn, the patteren matching is really slick
-fn get_value(c: u8) -> Option<u8> {
+fn get_value(c: u8) -> Result<u8, DecodeErr> {
 
     match c as char {
         // ascii 65 -> 90, base64 0 -> 25
-        'A' ... 'Z' => Some(c as u8 - 65),
+        'A' ... 'Z' => Ok(c as u8 - 65),
         // ascii 97 - 122, base64 26 -> 51
-        'a' ... 'z' => Some(c as u8 - 71),
+        'a' ... 'z' => Ok(c as u8 - 71),
         // ascii 48 - 57, base64 52 -> 61
-        '0' ... '9' => Some(c as u8 + 4),
+        '0' ... '9' => Ok(c as u8 + 4),
 
-        '+' => Some(62),
-        '/' => Some(63),
+        '+' => Ok(62),
+        '/' => Ok(63),
 
-        _ => None,
+        _ => Err(DecodeErr::BadValue(c)),
     }
 }
 
@@ -74,15 +82,7 @@ pub trait ByteWriter {
     fn write(self: &mut Self, b: u8);
 }
 
-#[derive(Debug, PartialEq)]
-pub enum DecodeErr {
-    // The non-whitespace input is not a multiple of four
-    NotMultFour,
-    // The input contains non-whitespace characters after the terminating padding
-    BadValue(u8),
-    // The input contains a non-base64 value
-    BadEndChar(u8)
-}
+
 
 // returns the number of bytes written or an error
 pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), DecodeErr> {
@@ -113,14 +113,8 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), Decode
 
         match (c1, c2, c3, c4) {
             (a, b, b'=', b'=') => {
-                let v1 = match get_value(a) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(a)),
-                };
-                let v2 = match get_value(b) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(b)),
-                };
+                let v1 = try!(get_value(a));
+                let v2 = try!(get_value(b));
                 writer.write(get_first_byte(v1, v2));
                 return match iter.next() { //  must be end of input
                     Some(x) => Err(DecodeErr::BadEndChar(x)),
@@ -128,18 +122,9 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), Decode
                 };
             },
             (a, b, c, b'=') => {
-                let v1 = match get_value(a) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(a)),
-                };
-                let v2 = match get_value(b) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(b)),
-                };
-                let v3 = match get_value(c) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(c)),
-                };
+                let v1 = try!(get_value(a));
+                let v2 = try!(get_value(b));
+                let v3 = try!(get_value(c));
                 writer.write(get_first_byte(v1, v2));
                 writer.write(get_second_byte(v2, v3));
                 return match iter.next() { //  must be end of input
@@ -148,22 +133,10 @@ pub fn decode<T : ByteWriter>(bytes: &[u8], writer: &mut T) -> Result<(), Decode
                 };
             },
             (a, b, c, d) => {
-                let v1 = match get_value(a) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(a)),
-                };
-                let v2 = match get_value(b) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(b)),
-                };
-                let v3 = match get_value(c) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(c)),
-                };
-                let v4 = match get_value(d) {
-                    Some(v) => v,
-                    None => return Err(DecodeErr::BadValue(d)),
-                };
+                let v1 = try!(get_value(a));
+                let v2 = try!(get_value(b));
+                let v3 = try!(get_value(c));
+                let v4 = try!(get_value(d));
                 writer.write(get_first_byte(v1, v2));
                 writer.write(get_second_byte(v2, v3));
                 writer.write(get_third_byte(v3, v4));
