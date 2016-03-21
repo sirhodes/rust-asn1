@@ -17,7 +17,7 @@ pub fn read_len(data: &[u8]) -> LengthResult {
             return Err(LengthErr::InsufficentBytes);
     }
 
-    let len = data[0];
+    let len     = data[0];
     let count   = len & 0b01111111u8;
     let top_bit = len & 0b10000000u8;
 
@@ -53,7 +53,7 @@ fn read_two_byte_len(acc: usize, data: &[u8]) -> LengthResult {
         Err(LengthErr::InsufficentBytes)
     } else {
         let value = ((data[0] as usize) << 8) | (data[1] as usize);
-        if value <= u8::MAX as usize {
+        if value <= 255 {
             Err(LengthErr::BadRepresentation(2, value))
         } else {
             Ok((acc+2, value))
