@@ -23,9 +23,9 @@ pub enum Tag {
 
 #[derive(Debug, PartialEq)]
 pub struct TypeId {
-    class: Class,
-    is_constructed: bool,
-    tag: Tag
+    pub class: Class,
+    pub is_constructed: bool,
+    pub tag: Tag
 }
 
 const CLASS_MASK : u8 = 0b11000000;

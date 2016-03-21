@@ -1,33 +1,77 @@
-use length::{LengthError};
-use tag::{TypeId};
+use length::{Length, LengthError, read_len};
+use tag::{Class, TypeId, Tag};
 
 pub enum Token<'a> {
-    ObjectIdentifier{ bytes: &'a[u8] },
+    ObjectIdentifier(&'a[u8]),
+    NoMoreTokens
 }
 
 pub enum DecodeError {
     Len(LengthError),
     UnknownType(TypeId),
+    BadLength(Length)
+}
+
+impl From<LengthError> for DecodeError {
+    fn from(err: LengthError) -> DecodeError {
+        DecodeError::Len(err)
+    }
 }
 
 pub struct Parser<'a> {
     bytes: &'a[u8],
     pos: usize,
-    // todo: there will be some kind of state
 }
 
 impl<'a> Parser<'a> {
+
     pub fn new(input: &'a[u8]) -> Parser {
         Parser {
             bytes: input,
-            pos: 0,
+            pos: 0,            
         }
     }
-}
 
-impl<'a> Iterator for Parser<'a> {
-    type Item = Result<Token<'a>, DecodeError>;
-    fn next(&mut self) -> Option<Result<Token<'a>, DecodeError>> {
-        None
+    fn remainder(&self) -> usize {
+        self.bytes.len() - self.pos
+    }
+
+    fn next(&mut self) -> Result<Token<'a>, DecodeError> {
+
+        if self.remainder() == 0 {
+            return Ok(Token::NoMoreTokens);
+        }
+
+        // read the typeid and the length
+        let id = TypeId::from_byte(self.bytes[self.pos]);
+        self.pos += 1;
+        let (num, len) = try!(read_len(&self.bytes[self.pos..]));
+        self.pos += num;
+
+        match id {
+            TypeId { class: Class::Univeral, is_constructed: false, tag: Tag::ObjectId } => {
+                self.decode_object_id(len)
+            },
+            x => {
+                Err(DecodeError::UnknownType(x))
+            },
+        }
+    }
+
+    fn decode_object_id(&mut self, len: Length) -> Result<Token<'a>, DecodeError> {
+        let remainder = self.remainder();
+        match len {
+            Length::None => {
+                Ok(Token::ObjectIdentifier(&self.bytes[0..0]))
+            },
+            Length::Value(x) => {
+                if x > remainder  {
+                    Err(DecodeError::BadLength(len))
+                }
+                else {
+                    Ok(Token::ObjectIdentifier(&self.bytes[self.pos..self.pos+x]))
+                }
+            },
+        }
     }
 }
