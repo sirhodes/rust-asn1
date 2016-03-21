@@ -11,7 +11,7 @@ pub enum Token<'a> {
 pub enum DecodeError {
     Len(LengthError),
     UnknownType(TypeId),
-    BadLength(Length)
+    BadLength(Length),
 }
 
 impl From<LengthError> for DecodeError {
@@ -64,14 +64,16 @@ impl<'a> Parser<'a> {
         let remainder = self.remainder();
         match len {
             Length::None => {
-                Ok(Token::ObjectIdentifier(&self.bytes[0..0]))
+                Err(DecodeError::BadLength(len)) // object id can't be used with indeterminate length
             },
             Length::Value(x) => {
                 if x > remainder  {
                     Err(DecodeError::BadLength(len))
                 }
                 else {
-                    Ok(Token::ObjectIdentifier(&self.bytes[self.pos..self.pos+x]))
+                    let c = self.pos;
+                    self.pos += x;
+                    Ok(Token::ObjectIdentifier(&self.bytes[c..c+x]))
                 }
             },
         }
@@ -87,6 +89,14 @@ mod tests {
     fn accepts_empty_input() {
         let input = b"";
         let mut parser = Parser::new(input);
+        assert_eq!(Ok(Token::NoMoreTokens), parser.next());
+    }
+
+    #[test]
+    fn accepts_valid_objectid() {
+        let input : [u8; 6] = [0x06, 0x04, 0xDE, 0xAD, 0xBE, 0xEF];
+        let mut parser = Parser::new(&input);
+        assert_eq!(Ok(Token::ObjectIdentifier(&input[2..])), parser.next());
         assert_eq!(Ok(Token::NoMoreTokens), parser.next());
     }
 }
